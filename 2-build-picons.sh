@@ -95,17 +95,18 @@ else
     exit 1
 fi
 
-##############################################
-## Ask the user whether to build SNP or SRP ##
-##############################################
+###################################################
+## Ask the user whether to build SNP, SRP or CHN ##
+###################################################
 if [[ -z $1 ]]; then
     echo "Which style are you going to build?"
-    select choice in "Service Reference" "Service Reference (Full)" "Service Name" "Service Name (Full)"; do
+    select choice in "Service Reference" "Service Reference (Full)" "Service Name" "Service Name (Full)" "Channel Name"; do
         case $choice in
             "Service Reference" ) style=srp; break;;
             "Service Reference (Full)" ) style=srp-full; break;;
             "Service Name" ) style=snp; break;;
             "Service Name (Full)" ) style=snp-full; break;;
+            "Channel Name" ) style=chn; break;;
         esac
     done
 else

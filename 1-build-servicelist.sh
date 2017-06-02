@@ -42,10 +42,11 @@ fi
 ##############################################
 if [[ -z $1 ]]; then
     echo "Which style are you going to build?"
-    select choice in "Service Reference" "Service Name"; do
+    select choice in "Service Reference" "Service Name" "Channel Name"; do
         case $choice in
             "Service Reference" ) style="srp"; break;;
             "Service Name" ) style="snp"; break;;
+            "Channel Name" ) style="chn"; break;;
         esac
     done
 else
@@ -55,7 +56,7 @@ fi
 #############################
 ## Check if style is valid ##
 #############################
-if [[ ! $style = "srp" ]] && [[ ! $style = "snp" ]]; then
+if [[ ! $style = "srp" ]] && [[ ! $style = "snp" ]] && [[ ! $style = "chn" ]]; then
     echo "ERROR: Unknown style!" >> $logfile
     echo "TERMINATED: Read the log file!"
     exit 1
@@ -64,7 +65,11 @@ fi
 #####################
 ## Read index file ##
 #####################
-index=$(<"$location/build-source/$style-index")
+if [[ $style = "chn" ]]; then
+    index=$(<"$location/build-source/snp-index")
+else
+    index=$(<"$location/build-source/$style-index")
+fi
 
 ##################################
 ## Enigma2 servicelist creation ##
@@ -121,12 +126,18 @@ if [[ -d $location/build-input/tvheadend ]]; then
         serviceref_id=$(sed -e 's/^[^_]*_0_[^_]*_//g' -e 's/_0_0_0$//g' <<< "$serviceref")
         unique_id=${serviceref_id%????}
         tvhservice=$(grep -A1 'services' "$channelfile" | sed -n "2p" | sed -e 's/"//g' -e 's/,//g')
-        channelname=$(grep 'svcname' $(find "$location/build-input/tvheadend" -type f -name $tvhservice) | sed -e 's/.*"svcname": "//g' -e 's/",//g' | iconv -f utf-8 -t ascii//translit 2>> $logfile | sed -e 's/^[ \t]*//' -e 's/|//g' -e 's/^//g')
+
+        if [[ $style = "chn" ]]; then
+            # omitting the '-t ascii' parameter as it also removes the german umlauts
+            channelname=$(grep 'svcname' $(find "$location/build-input/tvheadend" -type f -name $tvhservice) | sed -e 's/.*"svcname": "//g' -e 's/",//g' | iconv -f utf-8 2>> $logfile | sed -e 's/^[ \t]*//' -e 's/|//g' -e 's/^//g')
+        else
+            channelname=$(grep 'svcname' $(find "$location/build-input/tvheadend" -type f -name $tvhservice) | sed -e 's/.*"svcname": "//g' -e 's/",//g' | iconv -f utf-8 -t ascii//translit 2>> $logfile | sed -e 's/^[ \t]*//' -e 's/|//g' -e 's/^//g')
+        fi
 
         logo_srp=$(grep -i -m 1 "^$unique_id" <<< "$index" | sed -n -e 's/.*=//p')
         if [[ -z $logo_srp ]]; then logo_srp="--------"; fi
 
-        if [[ $style = "snp" ]]; then
+        if [[ $style = "snp" ]] || [[ $style = "chn" ]]; then
             snpname=$(sed -e 's/&/and/g' -e 's/*/star/g' -e 's/+/plus/g' -e 's/\(.*\)/\L\1/g' -e 's/[^a-z0-9]//g' <<< "$channelname")
             if [[ -z $snpname ]]; then snpname="--------"; fi
             logo_snp=$(grep -i -m 1 "^$snpname=" <<< "$index" | sed -n -e 's/.*=//p')
